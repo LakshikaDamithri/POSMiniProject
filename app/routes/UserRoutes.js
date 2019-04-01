@@ -7,4 +7,7 @@ module.exports = (app) => {
     //Authenticate
     app.post('/user/authenticate', user.authenticate)
 
+     //retreive
+     app.get('/user', user.findAll)
+
 }

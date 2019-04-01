@@ -1,4 +1,6 @@
 const Order = require('../models/order.js');
+const Item = require('../models/item.js')
+const mongoose = require('mongoose');
 
 // Create and Save a new order
 exports.create = (req, res) => {
@@ -8,7 +10,8 @@ exports.create = (req, res) => {
         OrderID: req.body.OrderID, 
         OrderName: req.body.OrderName,
         OrderStatus: req.body.status,
-        itemDetails: req.body.itemDetails
+        itemDetails: req.body.itemDetails,
+        OrderTotal: req.body.OrderTotal
     });
 
     console.log("$$$$  "+ order.itemDetails)
@@ -37,9 +40,33 @@ exports.findAll = (req, res) => {
     });
 };
 
+//Delete an order(Object ID)
+exports.delete = (req, res) => {
+    Order.findByIdAndRemove(req.params.orderId)
+    .then(order => {
+        if(!order) {
+            return res.status(404).send({
+                message: "Note not found with id " + req.params.noteId
+            });
+        }
+        res.send({message: "Note deleted successfully!"});
+    }).catch(err => {
+        if(err.kind === 'ObjectId' || err.name === 'NotFound') {
+            return res.status(404).send({
+                message: "Note not found with id " + req.params.orderId
+            });                
+        }
+        return res.status(500).send({
+            message: "Could not delete note with id " + req.params.orderId
+        });
+    });
+};
+
+
 // Retrieve and return all open orders from the database.
 exports.findAllOpen = (req, res) => {
-    Order.find()
+    Order.find().
+    populate('itemDetails.itemID')
     .then(orders => {
         
         var resultArray = []
@@ -89,32 +116,38 @@ exports.findOneOrder = (req, res) => {
 exports.addNewItem = (req, res) => {
     var order_id = req.params.orderId
     var item_id = req.params.itemId
-    var item_quantity = req.params.quantity
 
     Order.
     findOne({OrderID:order_id}).
     populate('itemDetails.itemID').
     then(order => {
-
-        //adding item to the order
-        order.itemDetails.push({itemID:item_id , itemQuantity: item_quantity})
-        order.save()
-       
-        var index = order.itemDetails.length-1
-        console.log(order.itemDetails[index].itemID.itemName)
-        order.itemDetails[index].itemID.available_quantity = order.itemDetails[index].itemID.available_quantity - item_quantity
-        console.log(order.itemDetails[index].itemID.available_quantity)
-
-        //modifying available item count
-        // array = order.itemDetails.filter( i=> i.itemID._id == item_id)
-        // array[0].itemID.available_quantity = array[0].itemID.available_quantity - item_quantity
-        
         if(!order) {
             return res.status(404).send({
                 message: "Order not found with id " + req.params.orderId
             });            
         }
-        res.send(order);
+
+        if(mongoose.Types.ObjectId.isValid(item_id)){
+            Item.
+            findOne({_id:item_id}).
+            then(item=>{
+                item.available_quantity = item.available_quantity-1
+                item.save()
+                const newItemDetails = {itemID: item, itemQuantity:1}
+                order.itemDetails.push(newItemDetails)
+                order.OrderTotal = order.OrderTotal + item.price
+                order.save()
+                return res.status(200).send(order)
+            }).
+            catch(err =>{
+                console.error(err)
+            })
+         } else {
+            return res.status(404).send({
+                message: "Item not found with id " + item_id
+            }); 
+         }
+
     }).catch(err => {
         console.log(err)
         if(err.kind === 'ObjectId') {
@@ -140,19 +173,34 @@ exports.removeItem = (req, res) => {
     populate('itemDetails.itemID').
     then(order => {
 
-        //Removing item to the order
-        resultArray = order.itemDetails.filter( i=> i.itemID.itemID != item_id)
-        order.itemDetails = resultArray
-
-
-        order.save()
-
         if(!order) {
             return res.status(404).send({
                 message: "Order not found with id " + req.params.orderId
             });            
         }
-        res.send(order);
+
+
+        for (let i =0 ; i<order.itemDetails.length; i++){
+            if(order.itemDetails[i].itemID.itemID == item_id){
+                Item.
+                findOne({itemID:item_id}).
+                then(item=>{
+                    item.available_quantity = item.available_quantity+1
+                    item.save()
+
+                    //Removing item to the order
+                    resultArray = order.itemDetails.filter( i=> i.itemID.itemID != item_id)
+                    order.itemDetails = resultArray
+                    order.OrderTotal = order.OrderTotal - item.price
+                    order.save()
+                    return res.status(200).send(order)
+                }).
+                catch(err =>{
+                    console.error(err)
+                })
+            }
+        }
+       
     }).catch(err => {
         console.log(err)
         if(err.kind === 'ObjectId') {
@@ -166,8 +214,68 @@ exports.removeItem = (req, res) => {
     });
 };
 
-// Changing item count in an order
-exports.ModifyItemCount = (req, res) => {
+// Incrementing item count in an order
+exports.ChangeItemCount = (req, res) => {
+
+    var order_id = req.params.orderId
+    var item_id = req.params.itemId
+    var newValue =req.params.value
+
+    Order.
+    findOne({OrderID:order_id}).
+    populate('itemDetails.itemID').
+    then(order => {
+        
+        if(!order) {
+            return res.status(404).send({
+                message: "Order not found with id " + req.params.orderId
+            });            
+        }
+
+        for (let i =0 ; i<order.itemDetails.length; i++){
+
+            if(order.itemDetails[i].itemID.itemID == item_id){
+
+                Item.
+                findOne({itemID:item_id}).
+                then(item=>{
+
+                    if(order.itemDetails[i].itemQuantity < newValue){
+                        item.available_quantity = item.available_quantity- (newValue - order.itemDetails[i].itemQuantity)
+                    } else {
+                        item.available_quantity = item.available_quantity+ (newValue - order.itemDetails[i].itemQuantity)
+                    }
+
+                    item.save()
+    
+                    const newItemDetails = {itemID: item, itemQuantity:newValue}
+                    order.itemDetails[i] = newItemDetails
+                    order.OrderTotal = order.OrderTotal + item.price
+                    order.save()
+                    console.log(order.itemDetails[i])
+                    return res.status(200).send(order)
+                }).
+                catch(err =>{
+                    console.error(err)
+                })
+            } 
+        }
+    }).catch(err => {
+        console.log(err)
+        if(err.kind === 'ObjectId') {
+            return res.status(404).send({
+                message: "Order not found with id " + order_id
+            });                
+        }
+        return res.status(500).send({
+            message: "Error retrieving order with id " + order_id
+        });
+    });
+}
+
+
+// Decrementing item count in an order
+exports.MinusItemCount = (req, res) => {
 
     var order_id = req.params.orderId
     var item_id = req.params.itemId
@@ -176,18 +284,36 @@ exports.ModifyItemCount = (req, res) => {
     findOne({OrderID:order_id}).
     populate('itemDetails.itemID').
     then(order => {
-        for (let i =0 ; i<order.itemDetails.length; i++){
-            if(order.itemDetails[i].itemID.itemID == item_id){
-                order.itemDetails[i].itemQuantity ++
-                order.save()
-            }
-        }
+
         if(!order) {
             return res.status(404).send({
                 message: "Order not found with id " + req.params.orderId
             });            
         }
-        res.send(order);
+
+        for (let i =0 ; i<order.itemDetails.length; i++){
+
+            if(order.itemDetails[i].itemID.itemID == item_id){
+
+                Item.
+                findOne({itemID:item_id}).
+                then(item=>{
+                    item.available_quantity = item.available_quantity+1
+                    item.save()
+                    const newQuantity = order.itemDetails[i].itemQuantity-1
+                    const newItemDetails = {itemID: item, itemQuantity:newQuantity}
+                    order.itemDetails[i] = newItemDetails
+                    order.OrderTotal = order.OrderTotal - item.price
+                    order.save()
+                    console.log(order.itemDetails[i])
+                    return res.status(200).send(order)
+                }).
+                catch(err =>{
+                    console.error(err)
+                })
+            } 
+        }
+
     }).catch(err => {
         console.log(err)
         if(err.kind === 'ObjectId') {

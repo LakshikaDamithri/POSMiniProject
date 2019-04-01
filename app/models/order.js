@@ -24,7 +24,12 @@ const OrderSchema = mongoose.Schema({
             ref: 'Item'
         },
         itemQuantity: Number
-    }]
+    }],
+    OrderTotal:{
+        type: Number,
+        required: true
+    }
+
 }, {
     timestamps: true
 });

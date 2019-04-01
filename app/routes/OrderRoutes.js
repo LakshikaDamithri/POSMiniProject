@@ -16,11 +16,17 @@ module.exports = (app) => {
     app.get('/orders/:orderId', orders.findOneOrder);
 
    // adding a new Item to an Order
-    app.put('/orders/add/:orderId/:itemId/:quantity', orders.addNewItem);
+    app.put('/orders/add/:orderId/:itemId', orders.addNewItem);
 
     // Removing an item
     app.put('/orders/remove/:orderId/:itemId', orders.removeItem);
 
-    // Modify item count in an oredr
-    app.put('/orders/:orderId/:itemId', orders.ModifyItemCount);
+    // Increment item count in an oredr
+    app.put('/orders/change/:orderId/:itemId/:value', orders.ChangeItemCount);
+
+    // Decerement item count in an oredr
+    app.put('/orders/minus/:orderId/:itemId', orders.MinusItemCount);
+
+    //Delete an Order
+    app.delete('/orders/delete/:orderId',orders.delete);
 }

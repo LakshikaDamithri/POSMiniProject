@@ -6,6 +6,8 @@ exports.authenticate = (req, res) => {
     var name = req.body.username;
     var pass = req.body.password; 
 
+   
+
     // Validate Request
          if(!(name&&pass)) {
             return res.status(400).send({
@@ -96,8 +98,8 @@ exports.create = (req, res) => {
 exports.findAll = (req, res) => {
     User.find()
     .then(users => {
-        //res.send(users);
-        res.end(users);
+        res.send(users);
+        //res.end(users);
     }).catch(err => {
         res.status(500).send({
             message: err.message || "Some error occurred while retrieving notes."
