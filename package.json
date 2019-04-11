@@ -2,11 +2,9 @@
   "name": "myapp",
   "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "start": "node ./bin/www"
-  },
   "dependencies": {
     "body-parser": "^1.18.3",
+    "config": "^3.0.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "express": "~4.16.0",
@@ -15,5 +13,14 @@
     "mongoose": "^5.4.19",
     "morgan": "~1.9.0",
     "nodemon": "^1.18.10"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-http": "^2.0.1",
+    "mocha": "^2.5.3"
+  },
+  "scripts": {
+    "start": "NODE_ENV=default nodemon ./bin/www",
+    "test": "NODE_ENV=test mocha --timeout 10000 "
   }
 }

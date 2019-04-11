@@ -12,7 +12,7 @@ const OrderSchema = mongoose.Schema({
     OrderName:{
         type: String,
         unique: true,
-        require:true
+        required:true
     },
     OrderStatus: {
         type: String,

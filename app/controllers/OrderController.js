@@ -4,8 +4,7 @@ const mongoose = require('mongoose');
 
 // Create and Save a new order
 exports.create = (req, res) => {
-   
-    // Create an oredr
+ console.log(req.body)
     const order = new Order({
         OrderID: req.body.OrderID, 
         OrderName: req.body.OrderName,
@@ -14,13 +13,14 @@ exports.create = (req, res) => {
         OrderTotal: req.body.OrderTotal
     });
 
-    console.log("$$$$  "+ order.itemDetails)
+console.log(order)
 
     //Save order in the database
     order.save()
     .then(data => {
         res.send(data);
     }).catch(err => {
+       // console.log(err)
         res.status(500).send({
             message: err.message || "Some error occurred while creating the Order."
         });
@@ -46,18 +46,18 @@ exports.delete = (req, res) => {
     .then(order => {
         if(!order) {
             return res.status(404).send({
-                message: "Note not found with id " + req.params.noteId
+                message: "Order not found with id " + req.params.noteId
             });
         }
-        res.send({message: "Note deleted successfully!"});
+        res.status(200).send({message: "Order deleted successfully!"});
     }).catch(err => {
         if(err.kind === 'ObjectId' || err.name === 'NotFound') {
             return res.status(404).send({
-                message: "Note not found with id " + req.params.orderId
+                message: "Order not found with id " + req.params.orderId
             });                
         }
         return res.status(500).send({
-            message: "Could not delete note with id " + req.params.orderId
+            message: "Could not delete Order with id " + req.params.orderId
         });
     });
 };
@@ -185,7 +185,7 @@ exports.removeItem = (req, res) => {
                 Item.
                 findOne({itemID:item_id}).
                 then(item=>{
-                    item.available_quantity = item.available_quantity+1
+                    item.available_quantity = item.available_quantity + order.itemDetails[i].itemQuantity
                     item.save()
 
                     //Removing item to the order
@@ -252,7 +252,7 @@ exports.ChangeItemCount = (req, res) => {
                     order.itemDetails[i] = newItemDetails
                     order.OrderTotal = order.OrderTotal + item.price
                     order.save()
-                    console.log(order.itemDetails[i])
+                   // console.log(order.itemDetails[i])
                     return res.status(200).send(order)
                 }).
                 catch(err =>{

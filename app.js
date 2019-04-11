@@ -9,6 +9,8 @@ var cors = require('cors');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
+
+
 var app = express();
 
 var corsOptions = {
@@ -64,19 +66,27 @@ app.get('/', (req, res) => {
 });
 
 // listen for requests
-app.listen(3000, () => {
-  console.log("Server is listening on port 3000");
+// app.listen(3002, () => {
+//   console.log("Server is listening on port 3002");
+// });
+
+app.listen(3001, () => {
+  console.log("Server is listening on port 3001");
 });
 
 
 // Configuring the database
-const dbConfig = require('./config/database.config.js');
+//const dbConfig = require('./config/default.json');
 const mongoose = require('mongoose');
+const dbConfig = require('./config/default.json');
+const config=require('config');
+
+const dbUrl=config.get('dbConfig.url');  
 
 mongoose.Promise = global.Promise;
 
 // Connecting to the database
-mongoose.connect(dbConfig.url, {
+mongoose.connect(dbUrl, {
     useNewUrlParser: true
 }).then(() => {
     console.log("Successfully connected to the database");    

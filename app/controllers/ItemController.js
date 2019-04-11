@@ -16,9 +16,8 @@ exports.create = (req, res) => {
         .then(data => {
             res.send(data);
         }).catch(err => {
-            res.status(500).send({
-                message: err.message || "Some error occurred while creating the item."
-            });
+            console.log(err)
+            res.status(500).send(err);
         });
 };
 

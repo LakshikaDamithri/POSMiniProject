@@ -17,12 +17,14 @@ exports.authenticate = (req, res) => {
 
     User.find({username: name,password: pass}).
         then( u =>{
+            console.log(u)
             if(u.length!=0){
                 res.status(201).send({
                     message: 'Acces granted'
                 })
             }
             else{
+
                 res.status(400).send({
                     message: "Incorrect Username or Password."
                 });
