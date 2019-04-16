@@ -1,5 +1,5 @@
 {
     "dbConfig": {
-      "url": "mongodb://localhost:27017/posdb"
+      "url": "mongodb://lakshika:kle13061@ds139956.mlab.com:39956/heroku_8htz2tjj"
     }
   }
